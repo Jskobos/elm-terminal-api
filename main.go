@@ -1,25 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 type feedback struct {
-	ID         		 int64    `json:"id"`
-	Feedback       string `json:"feedback"`
+	ID       int64  `json:"id"`
+	Feedback string `json:"feedback"`
 }
 
-type allFeedback []feedback 
+type allFeedback []feedback
 
 var feedbackData = allFeedback{
 	{
-		ID:          1,
+		ID:       1,
 		Feedback: "This is some sample feedback",
 	},
 }
@@ -46,6 +46,7 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	fmt.Println("starting server...")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/feedback", getFeedbackItems).Methods("GET")
 	router.HandleFunc("/feedback", createFeedback).Methods("POST")
