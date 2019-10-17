@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -29,7 +30,6 @@ func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func createFeedback(w http.ResponseWriter, r *http.Request) {
-	setupResponse(&w, r)
 	var newFeedback feedback
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -46,16 +46,14 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newFeedback)
 }
 
-func setupResponse(w *http.ResponseWriter, req *http.Request) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-}
-
 func main() {
 	fmt.Println("starting server...")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/feedback", getFeedbackItems).Methods("GET")
 	router.HandleFunc("/feedback", createFeedback).Methods("POST")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	withHandlers := handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "HEAD", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"*"}))(router)
+	log.Fatal(http.ListenAndServe(":8080", withHandlers))
 }
