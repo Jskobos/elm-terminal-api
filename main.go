@@ -46,9 +46,14 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newFeedback)
 }
 
+func optionsRequest(w http.ResponseWriter, r *http.Request) {
+	// Just return
+}
+
 func main() {
 	fmt.Println("starting server...")
 	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("*", optionsRequest).Methods("OPTIONS")
 	router.HandleFunc("/feedback", getFeedbackItems).Methods("GET")
 	router.HandleFunc("/feedback", createFeedback).Methods("POST")
 	withHandlers := handlers.CORS(
