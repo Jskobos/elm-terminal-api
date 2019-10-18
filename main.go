@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/go-pg/pg/v9"
-	"github.com/go-pg/pg/v9/orm"
 )
 
 type feedback struct {
@@ -20,44 +19,34 @@ type feedback struct {
 	IPAddress string `json:"ip_address"`
 }
 
-type allFeedback []feedback
-
-var feedbackData = allFeedback{
-	{
-		ID:       1,
-		Feedback: "This is some sample feedback",
-	},
-}
-
-func createSchema(db *pg.DB) error {
-	for _, model := range []interface{}{(*feedback)(nil)} {
-		err := db.CreateTable(model, &orm.CreateTableOptions{
-			Temp: true,
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func dbConnect() {
+func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 	db := pg.Connect(&pg.Options{
-		User: "postgres",
+		User:     "postgres",
+		Database: "postgres",
+		Password: "btaco*hds2tad",
+		Addr:     "localhost:5432",
 	})
+
 	defer db.Close()
 
-	err := createSchema(db)
+	var feedbackData []feedback
+	err := db.Model(&feedbackData).Select()
 	if err != nil {
 		panic(err)
 	}
-}
-
-func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(feedbackData)
 }
 
 func createFeedback(w http.ResponseWriter, r *http.Request) {
+	db := pg.Connect(&pg.Options{
+		User:     "postgres",
+		Database: "postgres",
+		Password: "btaco*hds2tad",
+		Addr:     "localhost:5432",
+	})
+
+	defer db.Close()
+
 	var newFeedback feedback
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -68,7 +57,15 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 	fmt.Println(newFeedback.Feedback)
-	feedbackData = append(feedbackData, newFeedback)
+	err = db.Insert(&feedback{
+		Feedback:  newFeedback.Feedback,
+		IPAddress: newFeedback.IPAddress,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(newFeedback)
@@ -79,6 +76,7 @@ func optionsRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	fmt.Println("Initializing db...")
 	fmt.Println("starting server...")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("*", optionsRequest).Methods("OPTIONS")
