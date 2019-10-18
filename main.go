@@ -43,15 +43,20 @@ func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func connectDB() pg.DB {
-	password, exists := os.LookupEnv("PG_PASSWORD")
-	if !exists {
-		panic("DB password not found")
+	password, existsPassword := os.LookupEnv("PG_PASSWORD")
+	database, existsDatabase := os.LookupEnv("PG_DATABASE")
+	user, existsUser := os.LookupEnv("PG_USER")
+	address, existsAddress := os.LookupEnv("PG_ADDRESS")
+
+	if !existsPassword || !existsDatabase || !existsUser || !existsAddress {
+		panic("Database credentials not found")
 	}
+
 	db := pg.Connect(&pg.Options{
-		User:     "postgres",
-		Database: "postgres",
+		User:     user,
+		Database: database,
 		Password: password,
-		Addr:     "localhost:5432",
+		Addr:     address,
 	})
 
 	return *db
