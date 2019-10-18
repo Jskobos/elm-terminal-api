@@ -6,11 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
 	"github.com/go-pg/pg/v9"
+
+	"github.com/joho/godotenv"
 )
 
 type feedback struct {
@@ -19,13 +22,15 @@ type feedback struct {
 	IPAddress string `json:"ip_address"`
 }
 
+func init() {
+	// loads values from .env into the system
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
+}
+
 func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
-	db := pg.Connect(&pg.Options{
-		User:     "postgres",
-		Database: "postgres",
-		Password: "btaco*hds2tad",
-		Addr:     "localhost:5432",
-	})
+	db := connectDB()
 
 	defer db.Close()
 
@@ -37,14 +42,23 @@ func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(feedbackData)
 }
 
-func createFeedback(w http.ResponseWriter, r *http.Request) {
+func connectDB() pg.DB {
+	password, exists := os.LookupEnv("PG_PASSWORD")
+	if !exists {
+		panic("DB password not found")
+	}
 	db := pg.Connect(&pg.Options{
 		User:     "postgres",
 		Database: "postgres",
-		Password: "btaco*hds2tad",
+		Password: password,
 		Addr:     "localhost:5432",
 	})
 
+	return *db
+}
+
+func createFeedback(w http.ResponseWriter, r *http.Request) {
+	db := connectDB()
 	defer db.Close()
 
 	var newFeedback feedback
