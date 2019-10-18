@@ -9,11 +9,15 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+
+	"github.com/go-pg/pg/v9"
+	"github.com/go-pg/pg/v9/orm"
 )
 
 type feedback struct {
-	ID       int64  `json:"id"`
-	Feedback string `json:"feedback"`
+	ID        int64  `json:"id"`
+	Feedback  string `json:"feedback"`
+	IPAddress string `json:"ip_address"`
 }
 
 type allFeedback []feedback
@@ -23,6 +27,30 @@ var feedbackData = allFeedback{
 		ID:       1,
 		Feedback: "This is some sample feedback",
 	},
+}
+
+func createSchema(db *pg.DB) error {
+	for _, model := range []interface{}{(*feedback)(nil)} {
+		err := db.CreateTable(model, &orm.CreateTableOptions{
+			Temp: true,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func dbConnect() {
+	db := pg.Connect(&pg.Options{
+		User: "postgres",
+	})
+	defer db.Close()
+
+	err := createSchema(db)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
