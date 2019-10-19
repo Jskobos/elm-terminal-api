@@ -71,14 +71,15 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "API Error: incorrect data format")
 	}
+
 	err = json.Unmarshal(reqBody, &newFeedback)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(newFeedback.Feedback)
+
 	err = db.Insert(&feedback{
 		Feedback:  newFeedback.Feedback,
-		IPAddress: newFeedback.IPAddress,
+		IPAddress: r.RemoteAddr,
 	})
 
 	if err != nil {
