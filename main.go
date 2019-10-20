@@ -70,11 +70,20 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(w, "API Error: incorrect data format")
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	err = json.Unmarshal(reqBody, &newFeedback)
 	if err != nil {
 		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if newFeedback.Feedback == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	err = db.Insert(&feedback{
@@ -83,7 +92,8 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
