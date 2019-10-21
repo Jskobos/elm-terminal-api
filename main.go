@@ -25,7 +25,7 @@ type feedback struct {
 func init() {
 	// loads values from .env into the system
 	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+		panic("No .env file found")
 	}
 }
 
@@ -37,7 +37,9 @@ func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 	var feedbackData []feedback
 	err := db.Model(&feedbackData).Select()
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(err.Error()))
+		return
 	}
 	json.NewEncoder(w).Encode(feedbackData)
 }
