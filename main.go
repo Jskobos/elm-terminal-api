@@ -89,6 +89,12 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(newFeedback.Feedback) > 1000 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Feedback text must be 1000 characters or less"))
+		return
+	}
+
 	err = db.Insert(&feedback{
 		Feedback:  newFeedback.Feedback,
 		IPAddress: r.RemoteAddr,
