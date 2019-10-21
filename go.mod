@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.3
 	github.com/joho/godotenv v1.3.0
+	github.com/kr/pretty v0.1.0 // indirect
 	golang.org/x/net v0.0.0-20190420063019-afa5a82059c6 // indirect
 	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69 // indirect
 )
