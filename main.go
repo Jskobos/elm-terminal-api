@@ -71,18 +71,21 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "API Error: incorrect data format")
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Incorrect data format"))
 		return
 	}
 
 	err = json.Unmarshal(reqBody, &newFeedback)
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("JSON parse error"))
 		return
 	}
 
 	if newFeedback.Feedback == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("feedback is required"))
 		return
 	}
 
@@ -93,6 +96,7 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte("Database write error"))
 		return
 	}
 
