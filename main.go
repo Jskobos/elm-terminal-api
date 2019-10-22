@@ -20,6 +20,7 @@ type feedback struct {
 	ID        int64  `json:"id"`
 	Feedback  string `json:"feedback"`
 	IPAddress string `json:"ip_address"`
+	Created   string `json:"created"`
 }
 
 func init() {
