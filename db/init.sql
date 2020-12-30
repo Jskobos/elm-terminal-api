@@ -1,6 +1,6 @@
 CREATE TABLE feedbacks (
   id serial PRIMARY KEY,
-  feedback VARCHAR(1024)
-  ip_address VARCHAR(50)
+  feedback VARCHAR(1024),
+  ip_address VARCHAR(50),
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
