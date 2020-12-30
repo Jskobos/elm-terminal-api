@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -42,6 +43,7 @@ func getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+	fmt.Printf("GET %s: %s %s\n", r.RequestURI, r.RemoteAddr, time.Now())
 	json.NewEncoder(w).Encode(feedbackData)
 }
 
@@ -88,12 +90,14 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 
 	if newFeedback.Feedback == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "API Error: invalid payload")
 		w.Write([]byte("feedback is required"))
 		return
 	}
 
 	if len(newFeedback.Feedback) > 1000 {
 		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "API Error: invalid payload")
 		w.Write([]byte("Feedback text must be 1000 characters or less"))
 		return
 	}
@@ -109,6 +113,8 @@ func createFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Printf("POST %s: %s %s\n", r.RequestURI, r.RemoteAddr, time.Now())
+
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(newFeedback)
@@ -119,8 +125,7 @@ func optionsRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	fmt.Println("Initializing db...")
-	fmt.Println("starting server...")
+	fmt.Println("Starting server on port 8080")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("*", optionsRequest).Methods("OPTIONS")
 	router.HandleFunc("/feedback", getFeedbackItems).Methods("GET")
