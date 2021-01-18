@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -60,7 +61,7 @@ func TestEmptyTable(t *testing.T) {
     }
 }
 
-func TestGETSuccess(t *testing.T) {
+func TestGETFeedbackSuccess(t *testing.T) {
     clearTable()
     addFeedback(1)
 
@@ -75,6 +76,45 @@ func TestGETSuccess(t *testing.T) {
     }
     if (len(body) != 1) {
         t.Errorf("Expected an array of feedback items. Got %s", response.Body.String())
+    }
+}
+
+func TestPOSTFeedbackSuccess(t *testing.T) {
+    clearTable()
+
+    var jsonStr = []byte(`{"feedback":"test new feedback", "ip_address": "2.2.2.2"}`)
+
+    req, _ := http.NewRequest("POST", "/feedback", bytes.NewBuffer(jsonStr))
+    response := executeRequest(req, false)
+
+    checkResponseCode(t, http.StatusCreated, response.Code)
+    var body Feedback
+    err := json.Unmarshal(response.Body.Bytes(), &body)
+    if (err != nil) {
+        t.Errorf("Expected feedback to be 'test new feedback'. Got %s", response.Body.String())
+    }
+    if (body.Feedback != "test new feedback") {
+        t.Errorf("Expected feedback to be 'test new feedback'. Got %s", body.Feedback)
+    }
+    if (body.IPAddress != "2.2.2.2") {
+        t.Errorf("Expected ip_address to be '2.2.2.2'. Got %s", body.IPAddress)
+    }
+}
+
+func TestPOSTFeedbackBadPayload(t *testing.T) {
+    clearTable()
+
+    var jsonStr = []byte(`{}`)
+
+    req, _ := http.NewRequest("POST", "/feedback", bytes.NewBuffer(jsonStr))
+    response := executeRequest(req, false)
+
+    checkResponseCode(t, http.StatusBadRequest, response.Code)
+    var m map[string]interface{}
+    json.Unmarshal(response.Body.Bytes(), &m)
+    
+    if (m["error"] != "Feedback is required") {
+        t.Errorf("Expected error message 'Feedback is required', got %s", m["error"])
     }
 }
 
@@ -108,7 +148,6 @@ func addFeedback(count int) {
         }
     }
 }
-
 
 const tableCreationQuery = `CREATE TABLE IF NOT EXISTS feedbacks (
     id serial PRIMARY KEY,

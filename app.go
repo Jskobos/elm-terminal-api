@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -39,43 +38,33 @@ func (a *App) getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 
 	feedbackData, err := getFeedbackItems(a.DB)
 	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(err.Error()))
+		respondWithError(w, r, http.StatusServiceUnavailable, "An unexpected error occurred")
 		return
 	}
-	fmt.Printf("GET %s: %s %s\n", r.RequestURI, r.RemoteAddr, time.Now())
-	json.NewEncoder(w).Encode(feedbackData)
+	respondWithJSON(w, r, http.StatusOK, feedbackData)
 }
 
 func (a *App) createFeedback(w http.ResponseWriter, r *http.Request) {
 	var newFeedback Feedback
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Fprintf(w, "API Error: incorrect data format")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Incorrect data format"))
+		respondWithError(w, r, http.StatusBadRequest, "Incorrect data format")
 		return
 	}
 
 	err = json.Unmarshal(reqBody, &newFeedback)
 	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Write([]byte("JSON parse error"))
+		respondWithError(w, r, http.StatusUnprocessableEntity, "JSON parse error")
 		return
 	}
 
 	if newFeedback.Feedback == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "API Error: invalid payload")
-		w.Write([]byte("feedback is required"))
+		respondWithError(w, r, http.StatusBadRequest, "Feedback is required")
 		return
 	}
 
 	if len(newFeedback.Feedback) > 1000 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "API Error: invalid payload")
-		w.Write([]byte("Feedback text must be 1000 characters or less"))
+		respondWithError(w, r, http.StatusBadRequest, "Feedback text must be 1000 characters or fewer")
 		return
 	}
 
@@ -86,16 +75,11 @@ func (a *App) createFeedback(w http.ResponseWriter, r *http.Request) {
 	err = feedback.createFeedbackItem(a.DB)
 		
 	if err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("Database write error"))
+		respondWithError(w, r, http.StatusServiceUnavailable, "Database write error")
 		return
 	}
 
-	fmt.Printf("POST %s: %s %s\n", r.RequestURI, r.RemoteAddr, time.Now())
-
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(newFeedback)
+	respondWithJSON(w, r, http.StatusCreated, newFeedback)
 }
 
 func (a *App) initializeRoutes() {
@@ -103,6 +87,19 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/feedback", a.getFeedbackItems).Methods("GET")
 	a.Router.HandleFunc("/feedback", a.createFeedback).Methods("POST")
 	
+}
+
+func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
+	respondWithJSON(w, r, code, map[string]string{"error": message})
+}
+
+func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	log.Printf("%s %s %d %s", r.Method, r.RequestURI, code, r.RemoteAddr)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
 
 // Initialize the server and routes.
