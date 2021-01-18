@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/go-pg/pg/v9"
-	"github.com/joho/godotenv"
 )
 
 // Feedback represents a single piece of user feedback
@@ -18,9 +17,6 @@ type Feedback struct {
 // ConnectDB uses environment variables to initialize a
 // connection to the database.
 func ConnectDB() (*pg.DB)  {
-	if err := godotenv.Load(); err != nil {
-		panic("No .env file found")
-	}	
 	password, existsPassword := os.LookupEnv("PG_PASSWORD")
 	database, existsDatabase := os.LookupEnv("PG_DATABASE")
 	user, existsUser := os.LookupEnv("PG_USER")
@@ -45,6 +41,9 @@ func getFeedbackItems(db *pg.DB) ([]Feedback, error) {
 	err := db.Model(&feedbackData).Select()
 	if (err != nil) { 
 		return nil, err
+	}
+	if (feedbackData == nil) {
+		return make([]Feedback, 0), nil
 	}
 	return feedbackData, nil
 }
