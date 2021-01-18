@@ -30,9 +30,7 @@ func (a *App) getFeedbackItems(w http.ResponseWriter, r *http.Request) {
 	secret, existsSecret := os.LookupEnv("SECRET");
 	authHeader := r.Header["Authorization"];
 	if (!existsSecret || len(authHeader) < 1 || authHeader[0] != "Bearer " + secret) {
-		fmt.Printf("API Error: Unauthorized\n")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))		
+		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 

@@ -42,8 +42,11 @@ func TestUnauthorized(t *testing.T) {
 
     checkResponseCode(t, http.StatusUnauthorized, response.Code)
 
-    if body := response.Body.String(); body != "Unauthorized" {
-        t.Errorf("Expected Unauthorized. Got %s", body)
+    var m map[string]interface{}
+    json.Unmarshal(response.Body.Bytes(), &m)
+    
+    if (m["error"] != "Unauthorized") {
+        t.Errorf("Expected Unauthorized error, got %s", m["error"])
     }
 }
 
