@@ -50,7 +50,7 @@ func getFeedbackItems(db *pg.DB) ([]Feedback, error) {
 }
 
 func (f *Feedback) createFeedbackItem(db *pg.DB) (error) {
-	err := db.Insert(&f)
+	err := db.Insert(f)
 	if (err != nil) {
 		return err
 	}

@@ -15,7 +15,7 @@ import (
 	"github.com/go-pg/pg/v9"
 )
 
-// App instance of the full application
+// App interface for the full application
 type App struct {
 	Router *mux.Router
 	DB *pg.DB
@@ -109,8 +109,8 @@ func (a *App) initializeRoutes() {
 func (a *App) Initialize() {
 	fmt.Println("Starting server on port 8080")
 	a.Router = mux.NewRouter().StrictSlash(true)
+	a.initializeRoutes()
 	a.DB = ConnectDB()
-
 }
 
 // Run starts up the server
