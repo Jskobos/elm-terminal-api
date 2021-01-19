@@ -80,11 +80,21 @@ func (a *App) createFeedback(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, r, http.StatusCreated, newFeedback)
 }
 
+func (a *App) getBooks(w http.ResponseWriter, r *http.Request) {
+	bookData, err := getBooks(a.DB)
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, r, http.StatusServiceUnavailable, "An unexpected error occurred")
+		return
+	}
+	respondWithJSON(w, r, http.StatusOK, bookData)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("*", optionsRequest).Methods("OPTIONS")
 	a.Router.HandleFunc("/feedback", a.getFeedbackItems).Methods("GET")
 	a.Router.HandleFunc("/feedback", a.createFeedback).Methods("POST")
-	
+	a.Router.HandleFunc("/books", a.getBooks).Methods("GET")
 }
 
 func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {

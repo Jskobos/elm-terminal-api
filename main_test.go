@@ -24,7 +24,10 @@ func TestMain(m *testing.M) {
 }
 
 func ensureTableExists() {
-    if _, err := a.DB.Exec(tableCreationQuery); err != nil {
+    if _, err := a.DB.Exec(feedbackTableCreationQuery); err != nil {
+        log.Fatal(err)
+    }
+    if _, err := a.DB.Exec(bookTableCreationQuery); err != nil {
         log.Fatal(err)
     }
 }
@@ -32,6 +35,8 @@ func ensureTableExists() {
 func clearTable() {
     a.DB.Exec("DELETE FROM feedbacks")
     a.DB.Exec("ALTER SEQUENCE feedbacks_id_seq RESTART WITH 1")
+    a.DB.Exec("DELETE FROM books")
+    a.DB.Exec("ALTER SEQUENCE books_id_seq RESTART WITH 1")
 }
 
 func TestUnauthorized(t *testing.T) {
@@ -121,6 +126,39 @@ func TestPOSTFeedbackBadPayload(t *testing.T) {
     }
 }
 
+func TestEmptyBooksTable(t *testing.T) {
+    clearTable()
+
+    req, _ := http.NewRequest("GET", "/books", nil)
+    response := executeRequest(req, true)
+
+    checkResponseCode(t, http.StatusOK, response.Code)
+    var body []Book
+    json.Unmarshal(response.Body.Bytes(), &body)
+    if (len(body) != 0) {
+        t.Errorf("Expected an empty array. Got %s", response.Body.String())
+    }
+}
+
+func TestGETBooksSuccess(t *testing.T) {
+    clearTable()
+    addBooks(1)
+
+    req, _ := http.NewRequest("GET", "/books", nil)
+    response := executeRequest(req, true)
+
+    checkResponseCode(t, http.StatusOK, response.Code)
+    var body []Book
+    json.Unmarshal(response.Body.Bytes(), &body)
+    err := json.Unmarshal(response.Body.Bytes(), &body)
+    if (err != nil) {
+        t.Errorf("Expected an array of books. Got %s", response.Body.String())
+    }
+    if (len(body) != 1) {
+        t.Errorf("Expected an array of books. Got %s", response.Body.String())
+    }
+}
+
 func executeRequest(req *http.Request, authorized bool) *httptest.ResponseRecorder {
     if (authorized) {
         secret, _ := os.LookupEnv("SECRET");
@@ -151,10 +189,32 @@ func addFeedback(count int) {
         }
     }
 }
+func addBooks(count int) {
+    if count < 1 {
+        count = 1
+    }
 
-const tableCreationQuery = `CREATE TABLE IF NOT EXISTS feedbacks (
+    for i := 0; i < count; i++ {
+        newBook := Book{Title: "King Lear Part " + strconv.Itoa(i), Author: "Shakespeare"}
+        err := a.DB.Insert(&newBook)
+        if (err != nil) {
+            log.Fatal(err)
+        }
+    }
+}
+
+const feedbackTableCreationQuery = `CREATE TABLE IF NOT EXISTS feedbacks (
     id serial PRIMARY KEY,
     feedback VARCHAR(1024),
     ip_address VARCHAR(50),
+    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`
+
+const bookTableCreationQuery = `CREATE TABLE IF NOT EXISTS books (
+    id serial PRIMARY KEY,
+    title VARCHAR(100),
+    author VARCHAR(100),
+    pages INT,
+    year_read INT,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`
