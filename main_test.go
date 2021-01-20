@@ -159,6 +159,52 @@ func TestGETBooksSuccess(t *testing.T) {
     }
 }
 
+func TestPOSTBooksUnauthorized(t *testing.T) {
+    clearTable()
+
+    var jsonStr = []byte(`{"title":"test book", "author": "an-author", "year_read": 2019, "pages": 250}`)
+
+    req, _ := http.NewRequest("POST", "/books", bytes.NewBuffer(jsonStr))
+    response := executeRequest(req, false)
+
+    checkResponseCode(t, http.StatusUnauthorized, response.Code)
+
+    var m map[string]interface{}
+    json.Unmarshal(response.Body.Bytes(), &m)
+    
+    if (m["error"] != "Unauthorized") {
+        t.Errorf("Expected Unauthorized error, got %s", m["error"])
+    }
+}
+
+func TestPOSTBooksSuccess(t *testing.T) {
+    clearTable()
+
+    var jsonStr = []byte(`{"title":"test book", "author": "an-author", "year_read": 2019, "pages": 250}`)
+
+    req, _ := http.NewRequest("POST", "/books", bytes.NewBuffer(jsonStr))
+    response := executeRequest(req, true)
+
+    checkResponseCode(t, http.StatusCreated, response.Code)
+    var body Book
+    err := json.Unmarshal(response.Body.Bytes(), &body)
+    if (err != nil) {
+        t.Errorf("JSON Unmarshal error. Got %s", response.Body.String())
+    }
+    if (body.Title != "test book") {
+        t.Errorf("Expected title to be 'test book'. Got %s", body.Title)
+    }
+    if (body.Author != "an-author") {
+        t.Errorf("Expected author to be 'an-author'. Got %s", body.Author)
+    }
+    if (body.Pages != 250) {
+        t.Errorf("Expected pages to be '250. Got %d", body.Pages)
+    }
+    if (body.YearRead != 2019) {
+        t.Errorf("Expected year read to be 2019. Got %d", body.YearRead)
+    }
+}
+
 func executeRequest(req *http.Request, authorized bool) *httptest.ResponseRecorder {
     if (authorized) {
         secret, _ := os.LookupEnv("SECRET");

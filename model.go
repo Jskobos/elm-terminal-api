@@ -20,6 +20,7 @@ type Book struct {
 	ID        int64  `json:"id"`
 	Title  		string `json:"title"`
 	Author 		string `json:"author"`
+	Pages	    int64  `json:"pages"`
 	YearRead	int64  `json:"year_read"`
 	Created   string `json:"created"`			
 }
@@ -77,5 +78,13 @@ func getBooks(db *pg.DB) ([]Book, error) {
 		return make([]Book, 0), nil
 	}
 	return bookData, nil
+}
+
+func (b *Book) createBook(db *pg.DB) error {
+	err := db.Insert(b)
+	if (err != nil) {
+		return err
+	}
+	return nil
 }
 

@@ -20,16 +20,23 @@ type App struct {
 	DB *pg.DB
 }
 
-func optionsRequest(w http.ResponseWriter, r *http.Request) {
-	// Just return
-}
-
-func (a *App) getFeedbackItems(w http.ResponseWriter, r *http.Request) {
+func checkAuth(r *http.Request) bool {
 	// This endpoint is not public
 	// @todo: better/more flexible auth
 	secret, existsSecret := os.LookupEnv("SECRET");
 	authHeader := r.Header["Authorization"];
 	if (!existsSecret || len(authHeader) < 1 || authHeader[0] != "Bearer " + secret) {
+		return false
+	}
+	return true
+}
+
+func optionsRequest(w http.ResponseWriter, r *http.Request) {
+	// Just return
+}
+
+func (a *App) getFeedbackItems(w http.ResponseWriter, r *http.Request) {
+	if (!checkAuth(r)) {
 		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
@@ -90,11 +97,46 @@ func (a *App) getBooks(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, r, http.StatusOK, bookData)
 }
 
+func (a *App) createBook(w http.ResponseWriter, r *http.Request) {
+	if (!checkAuth(r)) {
+		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	
+	var newBook Book
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		respondWithError(w, r, http.StatusBadRequest, "Incorrect data format")
+		return
+	}
+
+	err = json.Unmarshal(reqBody, &newBook)
+	if err != nil {
+		respondWithError(w, r, http.StatusUnprocessableEntity, "JSON parse error")
+		return
+	}
+
+	if newBook.Title == "" {
+		respondWithError(w, r, http.StatusBadRequest, "Title is required")
+		return
+	}
+
+	err = newBook.createBook(a.DB)
+		
+	if err != nil {
+		respondWithError(w, r, http.StatusServiceUnavailable, "Database write error")
+		return
+	}
+
+	respondWithJSON(w, r, http.StatusCreated, newBook)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("*", optionsRequest).Methods("OPTIONS")
 	a.Router.HandleFunc("/feedback", a.getFeedbackItems).Methods("GET")
 	a.Router.HandleFunc("/feedback", a.createFeedback).Methods("POST")
 	a.Router.HandleFunc("/books", a.getBooks).Methods("GET")
+	a.Router.HandleFunc("/books", a.createBook).Methods("POST")
 }
 
 func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
